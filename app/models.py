@@ -1,3 +1,4 @@
+from hashlib import md5
 from app import db
 
 class User(db.Model):
@@ -29,6 +30,10 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % (self.nickname)
+
+    def avatar(self, size):
+        # Hash user email, specify mystery man placeholder (d=mm), and scale.
+        return 'http://www.gravatar.com/avatar/%s?d=mm&s=%d' % (md5(self.email.encode('utf-8')).hexdigest(), size)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key = True)

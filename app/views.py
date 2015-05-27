@@ -10,11 +10,22 @@ def load_user(id):
     # User id is unicode string so convert to int.
     return User.query.get(int(id))
 
+# The before_request decorator ensures that this function will run before the view 
+# function each time a request is received.
+@app.before_request
+def before_request():
+    # current_user global set by FLask-Login.
+    # Assign to flask.g.user object so all requests will have access, even inside 
+    # templates.
+    g.user = current_user
+
+# Ensure index page is only seen by logged in users.
 @app.route('/')
 @app.route('/index')
+@login_required
 def index():
-    user = {'nickname': 'Cyrus'}  # Mock user.
-    posts = [  # Mock array of posts.
+    user = g.user
+    posts = [
         { 
             'author': {'nickname': 'John'}, 
             'body': 'Beautiful day in Portland!' 
@@ -83,3 +94,23 @@ def after_login(resp):
     # page. So if user tries to access a page that requires logging in, they'll be 
     # redirected to log in and then, once successful, can return to that page.
     return redirect(request.args.get('next') or url_for('index'))
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/user/<nickname>')
+@login_required
+def user(nickname):
+    user = User.query.filter_by(nickname=nickname).first()
+    if user == None:
+        flash('User %s not found.' % nickname)
+        return redirect(url_for('index'))
+    posts = [
+        {'author': user, 'body': 'Test post #1'},
+        {'author': user, 'body': 'Test post #2'}
+    ]
+    return render_template('user.html',
+                           user=user,
+                           posts=posts)
